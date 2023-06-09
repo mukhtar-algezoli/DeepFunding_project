@@ -1,8 +1,10 @@
 import pandas as pd
-from sentence_transformers import InputExample
+from torch.utils.data import DataLoader
 
+from sentence_transformers import InputExample
+from sentence_transformers import SentenceTransformer, InputExample, losses
 # Read CSV file
-df = pd.read_csv('data.csv')
+df = pd.read_csv('/home/muhammed-saeed/DeepFunding_project/TripletLoss/dataset/data.csv')
 
 # Group data by 'id'
 grouped = df.groupby('id')
@@ -27,3 +29,17 @@ for name, group in grouped:
                 break
 
 # Now 'data' list contains InputExamples with anchor and positive from same 'id' and negative from a different 'id'
+
+# Model to be fine-tuned
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Define the dataloader
+train_dataloader = DataLoader(data, shuffle=True, batch_size=16)
+train_loss = losses.MultipleNegativesRankingLoss(model=model)
+
+# Train the model
+model.fit(train_objectives=[(train_dataloader, train_loss)], epochs=10, warmup_steps=100)
+
+# After training, the model can be used to compute sentence embeddings:
+sentence_embeddings = model.encode(["This is an example sentence"])
+print('sentence embeddings')

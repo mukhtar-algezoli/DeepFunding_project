@@ -2,7 +2,7 @@ import pandas as pd
 from sentence_transformers import InputExample
 
 # Read CSV file
-df = pd.read_csv('data.csv')
+df = pd.read_csv('/home/muhammed-saeed/DeepFunding_project/TripletLoss/dataset/data.csv')
 
 # Group data by 'id'
 grouped = df.groupby('id')
