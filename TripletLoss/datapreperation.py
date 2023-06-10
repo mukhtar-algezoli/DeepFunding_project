@@ -1,29 +1,41 @@
 import pandas as pd
 from sentence_transformers import InputExample
 
-# Read CSV file
-df = pd.read_csv('/home/muhammed-saeed/DeepFunding_project/TripletLoss/dataset/data.csv')
+def get_processed_input_examples(path = './TripletLoss/dataset/data.csv'):
+    '''
+    This function takes a csv file path and returns a list of InputExample objects.
+    
+    Parameters:
+        path (str): The path of the csv file.
 
-# Group data by 'id'
-grouped = df.groupby('id')
+    Returns:
+        data (list): A list of InputExample objects.
+    '''
+    df = pd.read_csv('./TripletLoss/dataset/data.csv')
 
-# Hold the InputExamples
-data = []
+    # Group data by 'id'
+    grouped = df.groupby('id')
 
-# Iterate over each group
-for name, group in grouped:
-    questions = group['question'].tolist()
+    # Hold the InputExamples
+    data = []
 
-    # Prepare anchor-positive pairs from the same group
-    for i in range(len(questions)-1):
-        anchor = questions[i]
-        positive = questions[i+1]
+    # Iterate over each group
+    for name, group in grouped:
+        questions = group['question'].tolist()
 
-        # For each anchor-positive pair, prepare negative from a different group
-        for other_name, other_group in grouped:
-            if name != other_name:
-                negative = other_group['question'].iloc[0]
-                data.append(InputExample(texts=[anchor, positive, negative]))
-                break
+        # Prepare anchor-positive pairs from the same group
+        for i in range(len(questions)-1):
+            anchor = questions[i]
+            positive = questions[i+1]
 
-# Now 'data' list contains InputExamples with anchor and positive from same 'id' and negative from a different 'id'
+            # For each anchor-positive pair, prepare negative from a different group
+            for other_name, other_group in grouped:
+                if name != other_name:
+                    negative = other_group['question'].iloc[0]
+                    data.append(InputExample(texts=[anchor, positive, negative]))
+                    break
+
+        
+    print(f'Number of InputExamples: {len(data)}')
+    print(f'Example of InputExample: {data[0].texts}')
+    return data
