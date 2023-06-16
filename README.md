@@ -50,4 +50,12 @@
 #### Embedding Visualization:
 ![Embedding Visualization](figs/embs_vis.png)
 
+#### Cosine Similarity Distance Averages:
+![Cosine Similarity Distance Averages](figs/average_inter_and_intra_group_distances_vs_number_of_epochs.png)
+#### Cosine Similarity Distance inter-group Plot:
+![Cosine Similarity Distance inter-group Plot](figs/group_distance_group_distance.png)
+
+#### Cosine Similarity Distance intra-group Plot:
+![Cosine Similarity Distance intra-group Plot](figs/group_distance_total_distance.png)
+
 
