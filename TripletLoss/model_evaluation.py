@@ -6,6 +6,7 @@ import pandas as pd
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 import os
 import csv
+from sklearn.metrics.pairwise import cosine_distances
 import gzip
 
 
@@ -24,7 +25,7 @@ def get_vis_data():
     df = pd.read_csv(data_path)    
     df.dropna(subset=['question'], inplace=True)
     df.dropna(subset=['id'], inplace=True)
-    ids_with_count_greater_than_16 = df.id.value_counts()[df.id.value_counts() > 16].index.tolist()
+    ids_with_count_greater_than_16 = df.id.value_counts()[df.id.value_counts() > 2].index.tolist()
     df = df[df['id'].isin(ids_with_count_greater_than_16)]
     questions = df['question'].tolist()
     ids = df['id'].tolist()
@@ -40,7 +41,7 @@ def get_2d_embeddings(model_path, questions):
 
 
 
-def compare_sactter_plots(embeddings_2d_1, embeddings_2d_2, ids, title1= 'tuned model', title2 = 'bare model', cmap_name='tab10'):
+def compare_sactter_plots(embeddings_2d_1, embeddings_2d_2, ids,save_fig_name=None,title1= 'bare model', title2 = 'tuned model', cmap_name='tab20', show=True):
     unique_ids = set(ids)
     colors = plt.cm.get_cmap(cmap_name, len(unique_ids))
     id_color_map = {id: colors(i) for i, id in enumerate(unique_ids)}
@@ -56,20 +57,23 @@ def compare_sactter_plots(embeddings_2d_1, embeddings_2d_2, ids, title1= 'tuned 
     legend_labels = [plt.Line2D([], [], marker='o', color=id_color_map[id], markersize=5, label=get_node_name(id)) for id in unique_ids]
     fig.legend(handles=legend_labels, loc='center', bbox_to_anchor=(0.5, 1.05), ncol=3)
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+
+    if save_fig_name is not None:
+        plt.savefig(save_fig_name)
 
 
 
-def show_comparison_plot():
+def show_comparison_plot(tuned_model_name='./TripletLoss/models/sbert_model', show=True):
     bare_model_name = 'all-MiniLM-L6-v2'
-    tuned_model_name = './TripletLoss/models/sbert_model'
 
     questions, ids, node_names = get_vis_data()
 
     bare_embeddings_2d = get_2d_embeddings(bare_model_name, questions)
     tuned_embeddings_2d = get_2d_embeddings(tuned_model_name, questions)
-
-    compare_sactter_plots(bare_embeddings_2d, tuned_embeddings_2d, ids, title1= 'bare model', title2 = 'tuned model', cmap_name='tab10')
+    save_fig_name = f'./figs/{tuned_model_name.split("/")[-1]}.png'
+    compare_sactter_plots(bare_embeddings_2d, tuned_embeddings_2d, ids,save_fig_name=save_fig_name, title1= 'bare model', title2 = 'tuned model', cmap_name='tab10', show=show)
 
 
 def get_sts_benchmark_data():
@@ -87,25 +91,139 @@ def get_sts_benchmark_data():
     return test_samples
 
 
-def print_sts_benchmark_scores():
+def print_sts_benchmark_scores(tuned_model_name='./TripletLoss/models/sbert_model', print_bare_model_scores=False):
     test_samples = get_sts_benchmark_data()
+    x = [sample.texts for sample in test_samples]
     test_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(test_samples, batch_size=16, name='sts-test')
 
 
-    
-    bare_model_name = 'all-MiniLM-L6-v2'
-    tuned_model_name = './TripletLoss/models/sbert_model'
+    if print_bare_model_scores:
+        bare_model_name = 'all-MiniLM-L6-v2'
+        bare_model = SentenceTransformer(bare_model_name)
+        print(f'{"="*10} {bare_model_name} Bare Model Reseluts {"="*10}')
+        bare_res = test_evaluator(bare_model)
+        print(bare_res)
 
-    bare_model = SentenceTransformer(bare_model_name)
+
+
     tuned_model = SentenceTransformer(tuned_model_name)
-
-    print(f'{"="*10} {bare_model_name} Bare Model Reseluts {"="*10}')
-    print(test_evaluator(bare_model))
-
     print(f'{"="*10} {tuned_model_name} Tuned Model Reseluts {"="*10}')
-    print(test_evaluator(tuned_model))
+    res = test_evaluator(tuned_model)
+    print(res)
+
+    #append the results to a file
+    file_name = 'sts_benchmark_scores.csv'
+
+
+    if not os.path.exists(file_name):
+        with open(file_name, 'w') as f:
+            f.write('model_name,socre\n')
+    
+    with open(file_name, 'a') as f:
+        f.write(f'{tuned_model_name},{res}\n')
+
+    print(f'Saved the results to {file_name}')
+
+def get_average_distances(model_name = 'all-MiniLM-L6-v2'):
+
+    # Load the dataframe
+    
+    # Get the data
+    data_path = './TripletLoss/dataset/data.csv'
+    df = pd.read_csv(data_path)
+    df = df[['question', 'id']]
+
+    # drop rows with nan values
+    df = df.dropna()
+
+    #Reset the index
+    df = df.reset_index(drop=True)
+
+    # rename columns to sentences and labels
+    df.columns = ['sentence', 'label']
+
+    # Load the sentence transformer model
+    model = SentenceTransformer(model_name)
+
+    # Generate sentence embeddings
+    embeddings = model.encode(df['sentence'].tolist(), show_progress_bar=True)
+
+
+    # Calculate average distances within and across groups
+    group_distances = []
+    total_distances = []
+    all_res = {
+        'group_id': [],
+        'group_distance': [],
+        'total_distance': [],
+        'model_name': []
+    }
+    unique_groups = df['label'].unique()
+
+    for group in unique_groups:
+        group_indices = df[df['label'] == group].index
+        group_embeddings = embeddings[group_indices]
+        
+        # Calculate pairwise cosine distances within the group
+        group_distance = cosine_distances(group_embeddings).mean()
+        group_distances.append(group_distance)
+        
+        # Calculate pairwise cosine distances across groups
+        other_indices = df[df['label'] != group].index
+        other_embeddings = embeddings[other_indices]
+        total_distance = cosine_distances(group_embeddings, other_embeddings).mean()
+        total_distances.append(total_distance)
+
+        all_res['group_id'].append(group)
+        all_res['group_distance'].append(group_distance)
+        all_res['total_distance'].append(total_distance)
+        all_res['model_name'].append(model_name)
+
+    # Calculate the average distances
+    average_group_distance = sum(group_distances) / len(group_distances)
+    average_total_distance = sum(total_distances) / len(total_distances)
+
+    print("Average distance within groups:", average_group_distance)
+    print("Average distance across groups:", average_total_distance)
+
+    return average_group_distance, average_total_distance, all_res
+
+
+def save_distances(tuned_model_name='./TripletLoss/models/sbert_model', print_bare_model_scores=False):
+
+    if print_bare_model_scores:
+        bare_model_name = 'all-MiniLM-L6-v2'
+        print(f'Caculating average distances for {bare_model_name}')
+        _, _, bare_res = get_average_distances(bare_model_name)
+        print('='*10)
+        bare_res_df = pd.DataFrame(bare_res)
+
+
+    print(f'Caculating average distances for {tuned_model_name}')
+    _, _, tuned_res = get_average_distances(tuned_model_name)
+    tuned_res_df = pd.DataFrame(tuned_res)
+
+
+    file_name = f'average_distances.csv'
+    if not os.path.exists(file_name):
+        #save dataframes to csv
+        tuned_res_df.to_csv(file_name, index=False)
+    
+    else:
+        #read the file and append the new results
+        df = pd.read_csv(file_name)
+        df = df.append(tuned_res_df, ignore_index=True)
+        df.to_csv(file_name, index=False)
+
+    print(f'Saved the results to {file_name}')
+
+
 
 if __name__ == '__main__':
     show_comparison_plot()
 
     # print_sts_benchmark_scores()
+
+    # save_distances()
+
+    

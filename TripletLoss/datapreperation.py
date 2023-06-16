@@ -11,7 +11,7 @@ def get_processed_input_examples(path = './TripletLoss/dataset/data.csv'):
     Returns:
         data (list): A list of InputExample objects.
     '''
-    df = pd.read_csv('./TripletLoss/dataset/data.csv')
+    df = pd.read_csv(path)
 
     # Group data by 'id'
     grouped = df.groupby('id')
