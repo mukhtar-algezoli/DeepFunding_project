@@ -1,0 +1,12 @@
+model_name,socre
+./TripletLoss/models/sbert_model_10,0.8181477901828247
+./TripletLoss/models/sbert_model_20,0.8185638665768998
+./TripletLoss/models/sbert_model_30,0.8183836882704603
+./TripletLoss/models/sbert_model_40,0.8188693062040454
+./TripletLoss/models/sbert_model_50,0.8188378340643172
+./TripletLoss/models/sbert_model_60,0.819455394709885
+./TripletLoss/models/sbert_model_70,0.8180451798743165
+./TripletLoss/models/sbert_model_80,0.8180324070544104
+./TripletLoss/models/sbert_model_90,0.8183741151614138
+./TripletLoss/models/sbert_model_100,0.8184604064129543
+./TripletLoss/models/sbert_model_1,0.8202981399732733
