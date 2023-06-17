@@ -13,15 +13,13 @@ import gzip
 def get_sent_embeddings(model, sentences):
     return model.encode(sentences, show_progress_bar=True)
 
-def get_node_name(id):
-    data_path = './TripletLoss/dataset/data.csv'
+def get_node_name(id, data_path = './dataset/data.csv'):
     df = pd.read_csv(data_path)
     df_labels = df[df['node_name'].notnull()][['id', 'node_name']]
     df_labels.fillna(7.0, inplace=True)
     return df_labels[df_labels['id'] == id]['node_name'].values[0]
 
-def get_vis_data():
-    data_path = './TripletLoss/dataset/data.csv'
+def get_vis_data(data_path = './TripletLoss/dataset/data.csv'):
     df = pd.read_csv(data_path)    
     df.dropna(subset=['question'], inplace=True)
     df.dropna(subset=['id'], inplace=True)
@@ -29,7 +27,7 @@ def get_vis_data():
     df = df[df['id'].isin(ids_with_count_greater_than_16)]
     questions = df['question'].tolist()
     ids = df['id'].tolist()
-    node_names = [get_node_name(id) for id in ids]
+    node_names = [get_node_name(id, data_path=data_path) for id in ids]
 
     return questions, ids, node_names
 
