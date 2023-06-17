@@ -59,3 +59,7 @@
 ![Cosine Similarity Distance intra-group Plot](figs/group_distance_total_distance.png)
 
 
+
+## Fine-tuning with LoRa Adaptor
+<!-- Link to colab notebook for now, add information TODO -->
+Google Colab Notebook: <a href="https://colab.research.google.com/drive/1JmJSBo9WjTJ0ZB_pntbllB-97BY2k06M?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20></a>  
