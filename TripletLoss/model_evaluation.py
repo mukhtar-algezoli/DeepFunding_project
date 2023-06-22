@@ -44,13 +44,18 @@ def compare_sactter_plots(embeddings_2d_1, embeddings_2d_2, ids,save_fig_name=No
     colors = plt.cm.get_cmap(cmap_name, len(unique_ids))
     id_color_map = {id: colors(i) for i, id in enumerate(unique_ids)}
     # Visualize the embeddings colored by their ids with a legend of node names
-    fig, ax = plt.subplots(2, figsize=(8, 10))
+    if embeddings_2d_2 is not None:
+        fig, ax = plt.subplots(2, figsize=(8, 10))
+    else:
+        fig, ax = plt.subplots(figsize=(16, 10))
+        ax = [ax]
 
     scatter1 = ax[0].scatter(embeddings_2d_1[:, 0], embeddings_2d_1[:, 1], c=ids, cmap=cmap_name)
     ax[0].set_title(title1)
 
-    scatter2 = ax[1].scatter(embeddings_2d_2[:, 0], embeddings_2d_2[:, 1], c=ids, cmap=cmap_name)
-    ax[1].set_title(title2)
+    if embeddings_2d_2 is not None:
+        scatter2 = ax[1].scatter(embeddings_2d_2[:, 0], embeddings_2d_2[:, 1], c=ids, cmap=cmap_name)
+        ax[1].set_title(title2)
 
     legend_labels = [plt.Line2D([], [], marker='o', color=id_color_map[id], markersize=5, label=get_node_name(id)) for id in unique_ids]
     fig.legend(handles=legend_labels, loc='center', bbox_to_anchor=(0.5, 1.05), ncol=3)
