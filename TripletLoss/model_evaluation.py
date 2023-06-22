@@ -47,7 +47,7 @@ def compare_sactter_plots(embeddings_2d_1, embeddings_2d_2, ids,save_fig_name=No
     if embeddings_2d_2 is not None:
         fig, ax = plt.subplots(2, figsize=(8, 10))
     else:
-        fig, ax = plt.subplots(figsize=(16, 10))
+        fig, ax = plt.subplots(figsize=(8, 8))
         ax = [ax]
 
     scatter1 = ax[0].scatter(embeddings_2d_1[:, 0], embeddings_2d_1[:, 1], c=ids, cmap=cmap_name)
@@ -191,6 +191,44 @@ def get_average_distances(model_name = 'all-MiniLM-L6-v2'):
 
     return average_group_distance, average_total_distance, all_res
 
+
+def calculate_dsiatances_from_embeddings(embeddings, labels):
+    # Calculate average distances within and across groups
+    group_distances = []
+    total_distances = []
+    all_res = {
+        'group_id': [],
+        'group_distance': [],
+        'total_distance': [],
+    }
+    unique_groups = labels.unique()
+
+    for group in unique_groups:
+        group_indices = labels[labels == group].index
+        group_embeddings = embeddings[group_indices]
+        
+        # Calculate pairwise cosine distances within the group
+        group_distance = cosine_distances(group_embeddings).mean()
+        group_distances.append(group_distance)
+        
+        # Calculate pairwise cosine distances across groups
+        other_indices = labels[labels != group].index
+        other_embeddings = embeddings[other_indices]
+        total_distance = cosine_distances(group_embeddings, other_embeddings).mean()
+        total_distances.append(total_distance)
+
+        all_res['group_id'].append(group)
+        all_res['group_distance'].append(group_distance)
+        all_res['total_distance'].append(total_distance)
+
+    # Calculate the average distances
+    average_group_distance = sum(group_distances) / len(group_distances)
+    average_total_distance = sum(total_distances) / len(total_distances)
+
+    print("Average distance within groups:", average_group_distance)
+    print("Average distance across groups:", average_total_distance)
+
+    return average_group_distance, average_total_distance, all_res
 
 def save_distances(tuned_model_name='./TripletLoss/models/sbert_model', print_bare_model_scores=False):
 
