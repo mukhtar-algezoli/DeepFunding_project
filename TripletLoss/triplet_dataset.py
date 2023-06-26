@@ -95,9 +95,6 @@ def get_ids_to_labels_dict(data):
             ids_to_labels_dict[name] = f'unknown_{name}'
     return ids_to_labels_dict
 
-        
-
-
 def get_dataset(path='./dataset/data.csv', downsample_flag=True):
     df = pd.read_csv(path)
     df = clean_data(df)
@@ -149,7 +146,6 @@ def clean_data(data):
     return data
 
 def remove_duplicates(data):
-    #remove duplicate rows from the dataframe
     data = data.drop_duplicates(subset=['triplet'])
     data = data.reset_index(drop=True)
     return data

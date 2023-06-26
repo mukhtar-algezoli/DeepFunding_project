@@ -1,13 +1,86 @@
-# Use the model to generate embeddings all sentences in our dataset and then plot them in 2D using PCA
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
-from sentence_transformers import SentenceTransformer, util, InputExample
-import pandas as pd
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 import os
 import csv
-from sklearn.metrics.pairwise import cosine_distances
 import gzip
+import numpy as np
+import pandas as pd
+from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+from sklearn.metrics.pairwise import cosine_distances
+from sentence_transformers import SentenceTransformer, util, InputExample
+from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
+
+
+def calculate_dsiatances_from_embeddings(embeddings, labels):
+    group_distances = []
+    total_distances = []
+    all_res = {'group_id': [], 'inner_distance': [], 'across_distance': []}
+    unique_groups = labels.unique()
+
+    for group in unique_groups:
+        # Calculate pairwise cosine distances within the group
+        group_indices = labels[labels == group].index
+        group_embeddings = embeddings[group_indices]
+        group_distance = cosine_distances(group_embeddings).mean()
+        group_distances.append(group_distance)
+        
+        # Calculate pairwise cosine distances across groups
+        other_indices = labels[labels != group].index
+        other_embeddings = embeddings[other_indices]
+        total_distance = cosine_distances(group_embeddings, other_embeddings).mean()
+        total_distances.append(total_distance)
+
+        # Append the results to the dictionary
+        all_res['group_id'].append(group)
+        all_res['inner_distance'].append(group_distance)
+        all_res['across_distance'].append(total_distance)
+
+    # Calculate the average distances
+    average_group_distance = sum(group_distances) / len(group_distances)
+    average_total_distance = sum(total_distances) / len(total_distances)
+    all_res['average_inner_distance'] = average_group_distance
+    all_res['average_across_distance'] = average_total_distance
+
+    print("Average inner_distance  within groups(The lower  the better):", average_group_distance)
+    print("Average across_distance across groups(The higher the better):", average_total_distance)
+    return all_res
+
+def calculate_accuracy_from_embeddings(embeddings, labels):
+    total = 0
+    correct = 0
+    unique_groups = labels.unique()
+    avarage_group_embeddings = []
+    for group in unique_groups:
+        group_indices = labels[labels == group].index
+        group_embeddings = embeddings[group_indices]
+        avarage_group_embeddings.append(group_embeddings.mean(axis=0))
+    avarage_group_embeddings = np.array(avarage_group_embeddings)
+    acc_tbar = tqdm(enumerate(embeddings), total=len(embeddings), unit='sentence', desc='Calculating accuracy')
+    for i, embedding in acc_tbar:
+        total += 1
+        distances = cosine_distances([embedding], avarage_group_embeddings)
+        if np.argmin(distances) == labels[i]:
+            correct += 1
+        acc_tbar.set_postfix({'Accuracy': correct / total})
+
+    
+    acc  = correct / total
+    print(f'Accuracy: {acc}')
+    return acc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def get_sent_embeddings(model, sentences):
@@ -191,45 +264,6 @@ def get_average_distances(model_name = 'all-MiniLM-L6-v2'):
 
     return average_group_distance, average_total_distance, all_res
 
-
-def calculate_dsiatances_from_embeddings(embeddings, labels):
-    # Calculate average distances within and across groups
-    group_distances = []
-    total_distances = []
-    all_res = {
-        'group_id': [],
-        'group_distance': [],
-        'total_distance': [],
-    }
-    unique_groups = labels.unique()
-
-    for group in unique_groups:
-        group_indices = labels[labels == group].index
-        group_embeddings = embeddings[group_indices]
-        
-        # Calculate pairwise cosine distances within the group
-        group_distance = cosine_distances(group_embeddings).mean()
-        group_distances.append(group_distance)
-        
-        # Calculate pairwise cosine distances across groups
-        other_indices = labels[labels != group].index
-        other_embeddings = embeddings[other_indices]
-        total_distance = cosine_distances(group_embeddings, other_embeddings).mean()
-        total_distances.append(total_distance)
-
-        all_res['group_id'].append(group)
-        all_res['group_distance'].append(group_distance)
-        all_res['total_distance'].append(total_distance)
-
-    # Calculate the average distances
-    average_group_distance = sum(group_distances) / len(group_distances)
-    average_total_distance = sum(total_distances) / len(total_distances)
-
-    print("Average distance within groups:", average_group_distance)
-    print("Average distance across groups:", average_total_distance)
-
-    return average_group_distance, average_total_distance, all_res
-
 def save_distances(tuned_model_name='./TripletLoss/models/sbert_model', print_bare_model_scores=False):
 
     if print_bare_model_scores:
@@ -258,13 +292,5 @@ def save_distances(tuned_model_name='./TripletLoss/models/sbert_model', print_ba
 
     print(f'Saved the results to {file_name}')
 
-
-
-if __name__ == '__main__':
-    show_comparison_plot()
-
-    # print_sts_benchmark_scores()
-
-    # save_distances()
 
     
