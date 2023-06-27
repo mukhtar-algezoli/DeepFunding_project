@@ -5,12 +5,14 @@ from transformers import AutoTokenizer, AutoModel
 
 
 class STS_model(nn.Module): 
-    def __init__(self, model_path, device='cpu', pef_config=None): 
+    def __init__(self, model_path, device='cpu', pef_config=None, add_bert=True): 
         super(STS_model, self).__init__() 
         self.device = device
-        self.Bert_representations, self.tokenizer = get_Bert_representations_model(model_path, pef_config)
-        self.Bert_representations.train(mode=True)
-        self.Bert_representations.to(device)
+        self.add_bert = add_bert
+        if add_bert:
+            self.Bert_representations, self.tokenizer = get_Bert_representations_model(model_path, pef_config)
+            self.Bert_representations.train(mode=True)
+            self.Bert_representations.to(device)
 
     def mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output[0] #First element of model_output contains all token embeddings
