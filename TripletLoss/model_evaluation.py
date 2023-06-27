@@ -55,18 +55,16 @@ def calculate_accuracy_from_embeddings(embeddings, labels):
         group_embeddings = embeddings[group_indices]
         avarage_group_embeddings.append(group_embeddings.mean(axis=0))
     avarage_group_embeddings = np.array(avarage_group_embeddings)
-    acc_tbar = tqdm(enumerate(embeddings), total=len(embeddings), unit='sentence', desc='Calculating accuracy')
-    for i, embedding in acc_tbar:
+    for i, embedding in enumerate(embeddings):
         total += 1
         distances = cosine_distances([embedding], avarage_group_embeddings)
-        if np.argmin(distances) == labels[i]:
+        if np.argmin(distances)+1 == labels[i]:
             correct += 1
-        acc_tbar.set_postfix({'Accuracy': correct / total})
 
     
     acc  = correct / total
-    print(f'Accuracy: {acc}')
-    return acc
+    print(f'Accuracy: {acc*100:.2f}%')
+    return acc*100
 
 
 
