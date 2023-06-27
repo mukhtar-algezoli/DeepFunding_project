@@ -131,7 +131,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                 epochs_tbar.set_description(f'Epoch {epoch+1}/{num_epochs} | Average loss: {accumelated_loss/epoch_steps:.2f} | Accuracy: {accuracy:.2f}')
                 epochs_tbar.refresh()
 
-                
+                wandb.log({'loss': loss.item()})
                 if (steps % eval_every == 0) or (epoch_steps == len(train_dataset)):
                     print('Evaluating model')
                     embeddings = []
@@ -144,6 +144,11 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     average_across_distance =all_res['average_across_distance']
                     accuracy = calculate_accuracy_from_embeddings(embeddings, labels)
 
+                    wandb.log({'average_inner_distance': average_inner_distance})
+                    wandb.log({'average_across_distance': average_across_distance})
+                    wandb.log({'accuracy': accuracy})
+                    
+
                 if (steps % save_model_every == 0) or (epoch_steps == len(train_dataset)):
                     print('Saving model')
                     # lora_save_path = f'./models/LoRa/lora_model_{short_model_name}_{steps}'
@@ -155,14 +160,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     lora_model.push_to_hub(hub_model_name)
 
 
-                wandb.log(
-                    {
-                        'loss': loss.item(),
-                        'average_inner_distance': average_inner_distance,
-                        'average_across_distance': average_across_distance,
-                        'accuracy': accuracy
-                    }
-                )
+                
 
 
 
