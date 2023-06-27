@@ -3,19 +3,17 @@
 # os.chdir(work_dir)
 # os.chdir('DeepFunding_project/TripletLoss')
 
-from sklearn.metrics.pairwise import cosine_distances
-from triplet_dataset import get_dataset, get_sentence_id_label_df, TripletDataset
-from network import get_sts_model
-from tqdm.auto import tqdm
-import numpy as np
-from model_evaluation import  calculate_dsiatances_from_embeddings, calculate_accuracy_from_embeddings
-from sklearn.manifold import TSNE
-import torch
 import os
-import torch.nn as nn
-from peft import LoraConfig
-import argparse
 import sys
+import wandb
+import torch
+import numpy as np
+import torch.nn as nn
+from tqdm.auto import tqdm
+from peft import LoraConfig
+from network import get_sts_model
+from triplet_dataset import get_dataset, get_sentence_id_label_df, TripletDataset
+from model_evaluation import  calculate_dsiatances_from_embeddings, calculate_accuracy_from_embeddings
 
 def main(args_dict, use_argparse=False):
     default_args_dict = {
@@ -33,7 +31,8 @@ def main(args_dict, use_argparse=False):
         'shuffle': True,
         'eval_data_path': None,
         'save_model_path': './models/LoRa',
-        'model_save_name': None
+        'model_save_name': None,
+        'wandb_project_name': None
     }
     for key in default_args_dict.keys():
         if key not in args_dict.keys():
@@ -52,7 +51,7 @@ def main(args_dict, use_argparse=False):
 def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config=None,
           batch_size=16, lr=1e-5, triplet_loss=None, num_epochs=5, max_len=100,
           eval_every=100,save_model_every=1000, shuffle=True, eval_data_path=None,
-          save_model_path='./models/LoRa', model_save_name=None):
+          save_model_path='./models/LoRa', model_save_name=None, wandb_project_name=None):
     
     print('Loading model...')
     model = get_sts_model(model_path, device, peft_config)
@@ -68,11 +67,41 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
         triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
     if eval_data_path is None:
         eval_data_path = data_path
+    if wandb_project_name is None:
+        wandb_project_name = model_save_name+'-tracking'
 
     data_df = get_dataset(data_path)
     eval_data_df = get_sentence_id_label_df(eval_data_path)
     sentences = eval_data_df['sentence']
     labels = eval_data_df['id']
+
+    print('Initializing wandb...')
+    wandb.init(project=wandb_project_name)
+    wandb.config.update(
+        {
+            'model_path': model_path,
+            'data_path': data_path,
+            'device': device,
+            'LoRa_Rank': peft_config.r,
+            'LoRa_Alpha': peft_config.lora_alpha,
+            'LoRa_Dropout': peft_config.lora_dropout,
+            'LoRa_Target_Modules': peft_config.target_modules,
+            'batch_size': batch_size,
+            'lr': lr,
+            'triplet_loss': triplet_loss,
+            'num_epochs': num_epochs,
+            'max_len': max_len,
+            'eval_every': eval_every,
+            'save_model_every': save_model_every,
+            'shuffle': shuffle,
+            'eval_data_path': eval_data_path,
+            'save_model_path': save_model_path,
+            'model_save_name': model_save_name,
+            'wandb_project_name': wandb_project_name
+        }
+    )
+    wandb.watch(model)
+
 
 
     print('Training model...')
@@ -111,6 +140,8 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                         embeddings.append(embedding)
                     embeddings = np.array(embeddings).squeeze()
                     all_res = calculate_dsiatances_from_embeddings(embeddings, labels)
+                    average_inner_distance  = all_res['average_inner_distance']
+                    average_across_distance =all_res['average_across_distance']
                     accuracy = calculate_accuracy_from_embeddings(embeddings, labels)
 
                 if (steps % save_model_every == 0) or (epoch_steps == len(train_dataset)):
@@ -122,6 +153,20 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     print('Pushing model to hub')
                     hub_model_name = f'LoRa_{model_save_name}'
                     lora_model.push_to_hub(hub_model_name)
+
+
+                wandb.log(
+                    {
+                        'loss': loss.item(),
+                        'average_inner_distance': average_inner_distance,
+                        'average_across_distance': average_across_distance,
+                        'accuracy': accuracy
+                    }
+                )
+
+
+
+
 
 
 
