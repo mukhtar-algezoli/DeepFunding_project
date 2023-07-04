@@ -1,3 +1,4 @@
 figs/sbert*
 TripletLoss/models/
 TripletLoss/__pycache__/
+wandb
