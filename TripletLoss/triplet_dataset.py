@@ -10,7 +10,7 @@ import pickle
 import os
 
 class TripletDataset(torch.utils.data.Dataset):
-    def __init__(self, data, tokenizer, device='cpu', batch_size=10, shuffle=True, max_len=200, use_allnli=False):
+    def __init__(self, data, tokenizer, device='cpu', batch_size=10, shuffle=True, max_len=200, use_allnli=False, eval_data=False):
         '''
         data: pandas dataframe with columns: ['triplet', 'positive_group', 'negative_group']
         tokenizer: tokenizer object from transformers library
@@ -19,13 +19,22 @@ class TripletDataset(torch.utils.data.Dataset):
         shuffle: shuffle the data before batching
         '''
         self.using_allnli = use_allnli
+        self.eval_data = eval_data
         if self.using_allnli:
             # self.data = get_ALLNLI_dataset()
             big_allnli = get_ALLNLI_dataset()
-            self.data = big_allnli[:5000]
+            if self.eval_data:
+                self.data = big_allnli[6000:7000]
+            else:
+                self.data = big_allnli[:5000]
             
         else:
-            self.data = data
+            if self.eval_data:
+                #Select the last 1000 rows for evaluation
+                self.data = data[-1000:]
+            else:
+                # Select all rows except the last 1000 for training
+                self.data = data[:-1000]
         self.shuffle = shuffle
         self.batch_size = batch_size
         self.device = device
