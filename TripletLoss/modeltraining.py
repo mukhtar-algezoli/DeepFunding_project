@@ -32,7 +32,8 @@ def main(args_dict, use_argparse=False):
         'eval_data_path': None,
         'save_model_path': './models/LoRa',
         'model_save_name': None,
-        'wandb_project_name': None
+        'wandb_project_name': None,
+        'use_allnli': False
     }
     for key in default_args_dict.keys():
         if key not in args_dict.keys():
@@ -51,7 +52,7 @@ def main(args_dict, use_argparse=False):
 def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config=None,
           batch_size=16, lr=1e-5, triplet_loss=None, num_epochs=5, max_len=100,
           eval_every=100,save_model_every=1000, shuffle=True, eval_data_path=None,
-          save_model_path='./models/LoRa', model_save_name=None, wandb_project_name=None):
+          save_model_path='./models/LoRa', model_save_name=None, wandb_project_name=None, use_allnli=False):
     
     print('Loading model...')
     model = get_sts_model(model_path, device, peft_config)
@@ -109,7 +110,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
     steps = 0
     accuracy = 0
     for epoch in epochs_tbar:
-        train_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len)
+        train_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
         epoch_steps = 0
         accumelated_loss = 0
         batches_tbar = tqdm(train_dataset, unit='batch')
@@ -185,3 +186,19 @@ if __name__ == '__main__':
         print('Arguments were given, using given arguments')
         main({}, use_argparse=True)
 
+
+
+
+# Training Report
+# 1. Training Dataset:
+#     - We used our custom preprocessed dataset as previously mentioned. The dataset is in the triplet format (anchor, positive, negative) and a total of 7112 triplets were used for training. 
+# The dataset has 14 different classes and each class is represented by 508 triplets. The average sentence length is 5.5 words and the maximum sentence length is 26 words.
+# 2. Model:
+#     - The base model used is MiniLM-L12-v1 This is a pretrained sentence-transformers model that maps sentences & paragraphs to a 384 dimensional dense vector space and can be used for tasks like clustering or semantic search.
+# It was trained on a large and diverse dataset of over 1 billion training pairs using a contrastive loss function.
+#     - The model was fine-tuned using Parameter Efficient fine-tuning (Peft) technique. Peft is a technique that allows for fine-tuning of large models with a small number of parameters. 
+# Specifically we used the LoRa technique which is a Peft technique that allows for fine-tuning of large models by only fine-tuning a small set of Low Rank matrices inserted in different layers of the model.
+# We used a rank of 64 and the target modules were: value, query, key, and dense layers. This resulted in a model with 5M trainble parameters, which is 13.5% of the original model parameters.
+# 3. Training:
+#     - The model was trained for 10 epochs with a batch size of 16. The optimizer used was AdamW with a learning rate of 1e-5. The triplet loss function was used with a margin of 1.0 and a norm degree 2.
+# The maximum sentence length was 200 words. The model was trained on a single GPU (Nvidia Tesla T4) and the training took 2 hours and 30 minutes.
