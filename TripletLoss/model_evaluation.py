@@ -9,7 +9,17 @@ from sklearn.manifold import TSNE
 from sklearn.metrics.pairwise import cosine_distances
 from sentence_transformers import SentenceTransformer, util, InputExample
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
+from sklearn.metrics import accuracy_score, confusion_matrix
 
+def get_avarage_group_embeddings(embeddings, labels):
+    unique_groups = labels.unique()
+    avarage_group_embeddings = []
+    for group in unique_groups:
+        group_indices = labels[labels == group].index
+        group_embeddings = embeddings[group_indices]
+        avarage_group_embeddings.append(group_embeddings.mean(axis=0))
+    avarage_group_embeddings = np.array(avarage_group_embeddings)
+    return avarage_group_embeddings, unique_groups
 
 def calculate_dsiatances_from_embeddings(embeddings, labels):
     group_distances = []
@@ -46,26 +56,15 @@ def calculate_dsiatances_from_embeddings(embeddings, labels):
     return all_res
 
 def calculate_accuracy_from_embeddings(embeddings, labels):
-    total = 0
-    correct = 0
-    unique_groups = labels.unique()
-    avarage_group_embeddings = []
-    for group in unique_groups:
-        group_indices = labels[labels == group].index
-        group_embeddings = embeddings[group_indices]
-        avarage_group_embeddings.append(group_embeddings.mean(axis=0))
-    avarage_group_embeddings = np.array(avarage_group_embeddings)
-    for i, embedding in enumerate(embeddings):
-        total += 1
+    avarage_group_embeddings, unique_groups = get_avarage_group_embeddings(embeddings, labels)
+    preds = []
+    for i , embedding in enumerate(embeddings):
         distances = cosine_distances([embedding], avarage_group_embeddings)
-        if np.argmin(distances)+1 == labels[i]:
-            correct += 1
-
-    
-    acc  = correct / total
-    print(f'Accuracy: {acc*100:.2f}%')
-    return acc*100
-
+        predicted_group = unique_groups[distances.argmin()]
+        preds.append(predicted_group)
+    print(accuracy_score(labels, preds))
+    print(confusion_matrix(labels, preds))
+    return accuracy_score(labels, preds)
 
 
 

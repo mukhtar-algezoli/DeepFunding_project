@@ -68,11 +68,24 @@ def main(args_dict, use_argparse=False):
     train(**args_dict)
 
 def get_train_eval_test_data(data_path, random_state=42):
-    data_df = get_dataset(data_path)
-    train_df = data_df.sample(frac=0.8, random_state=random_state)
-    test_df = data_df.drop(train_df.index)
+    #Read CSV and drop nan values
+    df = pd.read_csv(data_path)
+    df = df.dropna(subset=['question'])
+    df = df.dropna(subset=['id'])
+    df = df.reset_index(drop=True)
+    # Split data into train, val, and test 0.8, 0.1, 0.1
+    train_df = df.sample(frac=0.8, random_state=random_state)
+    test_df = df.drop(train_df.index)
     val_df = test_df.sample(frac=0.5, random_state=random_state)
     test_df = test_df.drop(val_df.index)
+    # Reset indexes
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+    #Get Triplets Datasets
+    train_df = get_dataset(train_df=train_df)
+    val_df = get_dataset(train_df=val_df)
+    test_df = get_dataset(train_df=test_df)
     return train_df, val_df, test_df
 
 

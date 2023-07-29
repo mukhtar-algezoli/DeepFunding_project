@@ -108,9 +108,10 @@ def get_ids_to_labels_dict(data):
             ids_to_labels_dict[name] = f'unknown_{name}'
     return ids_to_labels_dict
 
-def get_dataset(path='./dataset/data.csv', downsample_flag=True):
-    df = pd.read_csv(path)
-    df = clean_data(df)
+def get_dataset(path='./dataset/data.csv', downsample_flag=True, df=None):
+    if df is None:
+        df = pd.read_csv(path)
+        df = clean_data(df)
     df = create_triplets(df)
     df = remove_duplicates(df)
     if downsample_flag:
