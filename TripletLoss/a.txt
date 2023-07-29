@@ -1,0 +1,50 @@
+Here's the English translation of the provided LaTeX table:
+
+\begin{tabular}{llr}
+\toprule
+{} &                                           sentence &  group \\
+\midrule
+  & Hello. &    1.0 \\
+  & Peace and blessings be upon you. &    1.0 \\
+  & The worst customer service you can encounter. &    2.0 \\
+  & Your services are awful. &    2.0 \\
+  & What is your phone number? &    3.0 \\
+  & The number 6100 is not working. &    3.0 \\
+  & I want to know the currency exchange rates. &    4.0 \\
+  & What is the exchange rate of the dollar today? &    4.0 \\
+  & Can I buy dollars from the bank? &    5.0 \\
+  & I want to exchange Sudanese currency for dollars. &    5.0 \\
+  & What amount is deposited to open the account? &    6.0 \\
+  & I want to open a new account. &    6.0 \\
+  & I am a resident in Saudi Arabia, can I open an account in Riyals? &    7.0 \\
+  & I am in Saudi Arabia, how can I open an account with you? &    7.0 \\
+  & I have a question, if you please. &    8.0 \\
+  & I have a quick question. &    8.0 \\
+  & Do you have a branch in Halfa Al Jadida? &    9.0 \\
+  & I'm asking about your branch in Bahri, have you opened it yet? &    9.0 \\
+  & Can I transfer money from here to Egypt? &   10.0 \\
+  & I am in Saudi Arabia, how can I send money to Sudan through the bank? &   10.0 \\
+  & I'm inquiring about investment deposits. &   11.0 \\
+  & What are the conditions and profits of investment deposits? &   11.0 \\
+  & May God bless you in this life and the hereafter. &   12.0 \\
+  & Thank you, and thank you for your excellent service. &   12.0 \\
+  & Inquiring about bank jobs for computer science graduates. &   13.0 \\
+  & Are there any internship opportunities for students? &   13.0 \\
+  & I want to borrow money. &   14.0 \\
+  & Can people borrow money from you? &   14.0 \\
+\end{tabular}
+1,welcome message
+2,complaint
+3,Phone number + number not working
+4,Exchange rate
+5, Forgin currency exchange
+6,Account opening
+7,Account opening from abroad
+8,General question
+9,Branch location
+10,Transfer
+11,Investment deposit
+12,Thanks
+13,Job application
+14,Loan
+

@@ -168,7 +168,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                 epochs_tbar.refresh()
                 wandb.log({'loss': loss.item()})
 
-                if (steps % eval_every == 0) or (epoch_steps == len(train_dataset)):
+                if (steps % eval_every == 0) or (epoch_steps == len(train_dataset)) or (epoch_steps == 1):
                     print('Evaluating model')
                     #Calculate triplet loss on eval dataset
                     model.eval()
