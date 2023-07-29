@@ -186,7 +186,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     embeddings = []
                     # sentences = eval_dataset
                     sentences = val_single_df['sentence'].tolist()
-                    labels = val_single_df['group'].tolist()
+                    labels = val_single_df['group']
                     for sentence in tqdm(sentences, unit='sentence', desc='Generating embeddings'):
                         embedding = model(sentence).detach().cpu().numpy()
                         embeddings.append(embedding)
