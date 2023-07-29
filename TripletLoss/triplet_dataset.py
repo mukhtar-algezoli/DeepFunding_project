@@ -27,29 +27,20 @@ class TripletDataset(torch.utils.data.Dataset):
         self.max_len = max_len
 
         if shuffle:
-            if self.using_allnli:
-                random.shuffle(self.data)
-            else:
-                self.data = self.data.sample(frac=1).reset_index(drop=True)
+            self.data = self.data.sample(frac=1).reset_index(drop=True)
 
         self.batched_data = []
         current_batch = []
         for k in tqdm(range(len(self.data)), unit='row', desc='Batching data'):
-            if self.using_allnli:
-                item = self.data[k]
-            else:
-                row = self.data.iloc[k]
-                item = row['triplet']
+            row = self.data.iloc[k]
+            item = row['triplet']
             current_batch.append(item.texts)
             if len(current_batch) == self.batch_size:
                 self.batched_data.append(current_batch)
                 current_batch = []
         for k in range(self.batch_size - len(current_batch) ):
-            if self.using_allnli:
-                item = self.data[k]
-            else:
-                row = self.data.iloc[k]
-                item = row['triplet']
+            row = self.data.iloc[k]
+            item = row['triplet']
             current_batch.append(item.texts)
         self.batched_data.append(current_batch)
         
