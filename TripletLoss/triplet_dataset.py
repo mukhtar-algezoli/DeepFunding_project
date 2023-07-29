@@ -29,12 +29,7 @@ class TripletDataset(torch.utils.data.Dataset):
                 self.data = big_allnli[:5000]
             
         else:
-            if self.eval_data:
-                #Select the last 1000 rows for evaluation
-                self.data = data[-1000:]
-            else:
-                # Select all rows except the last 1000 for training
-                self.data = data[:-1000]
+            self.data = data
         self.shuffle = shuffle
         self.batch_size = batch_size
         self.device = device

@@ -8,12 +8,36 @@ import sys
 import wandb
 import torch
 import numpy as np
+import pandas as pd
 import torch.nn as nn
 from tqdm.auto import tqdm
 from peft import LoraConfig
 from network import get_sts_model
 from triplet_dataset import get_dataset, get_sentence_id_label_df, TripletDataset
 from model_evaluation import  calculate_dsiatances_from_embeddings, calculate_accuracy_from_embeddings
+
+
+def triplets_df_to_single_df(triplets_df):
+    triplets = triplets_df['triplet'].tolist()
+    triplets = [triplet.texts for triplet in triplets]
+    positive_groups = triplets_df['positive_group'].tolist()
+    negative_groups = triplets_df['negative_group'].tolist()
+    sentences =[]
+    groups = []
+    for triplet, positive_group, negative_group in zip(triplets, positive_groups, negative_groups):
+        anchor, positive, negative = triplet
+        if anchor not in sentences:
+            sentences.append(anchor)
+            groups.append(positive_group)
+        if positive not in sentences:
+            sentences.append(positive)
+            groups.append(positive_group)
+        if negative not in sentences:
+            sentences.append(negative)
+            groups.append(negative_group)
+    data = {'sentence': sentences, 'group': groups}
+    df = pd.DataFrame(data)
+    return df
 
 def main(args_dict, use_argparse=False):
     default_args_dict = {
@@ -72,6 +96,11 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
         wandb_project_name = model_save_name+'-tracking'
 
     data_df = get_dataset(data_path)
+    train_df = data_df.sample(frac=0.8, random_state=42)
+    test_df = data_df.drop(train_df.index)
+    val_df = test_df.sample(frac=0.5, random_state=42)
+    val_single_df = triplets_df_to_single_df(val_df)
+    test_df = test_df.drop(val_df.index)
     eval_data_df = get_sentence_id_label_df(eval_data_path)
     sentences = eval_data_df['sentence']
     labels = eval_data_df['id']
@@ -110,7 +139,10 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
     steps = 0
     accuracy = 0
     for epoch in epochs_tbar:
-        train_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
+        # train_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
+        # eval_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli, eval_data=True)
+        train_dataset = TripletDataset(train_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
+        eval_dataset = TripletDataset(val_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
         epoch_steps = 0
         accumelated_loss = 0
         batches_tbar = tqdm(train_dataset, unit='batch')
@@ -135,7 +167,26 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                 wandb.log({'loss': loss.item()})
                 if (steps % eval_every == 0) or (epoch_steps == len(train_dataset)):
                     print('Evaluating model')
+                    #Calculate triplet loss on eval dataset
+                    model.eval()
+                    eval_loss = 0
+                    eval_steps = 0
+                    for input in tqdm(eval_dataset, unit='batch', desc='Calculating triplet loss on eval dataset'):
+                        anchor = model(input[0])
+                        positive = model(input[1])
+                        negative = model(input[2])
+                        loss = triplet_loss(anchor, positive, negative)
+                        eval_loss += loss.item()
+                        eval_steps += 1
+                    eval_loss = eval_loss/eval_steps
+                    wandb.log({'eval_loss': eval_loss})
+
+
+                    #Calculate accuracy on eval dataset
                     embeddings = []
+                    # sentences = eval_dataset
+                    sentences = val_single_df['sentence'].tolist()
+                    labels = val_single_df['group'].tolist()
                     for sentence in tqdm(sentences, unit='sentence', desc='Generating embeddings'):
                         embedding = model(sentence).detach().cpu().numpy()
                         embeddings.append(embedding)
@@ -144,11 +195,11 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     average_inner_distance  = all_res['average_inner_distance']
                     average_across_distance =all_res['average_across_distance']
                     accuracy = calculate_accuracy_from_embeddings(embeddings, labels)
-
                     wandb.log({'average_inner_distance': average_inner_distance})
                     wandb.log({'average_across_distance': average_across_distance})
                     wandb.log({'accuracy': accuracy})
                     
+                    model.train()
 
                 if (steps % save_model_every == 0) or (epoch_steps == len(train_dataset)):
                     print('Saving model')
