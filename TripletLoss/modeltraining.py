@@ -67,26 +67,22 @@ def main(args_dict, use_argparse=False):
         print(f'{key}: {args_dict[key]}')
     train(**args_dict)
 
-def get_train_eval_test_data(data_path, random_state=42):
+def get_train_eval_data(data_path,train_size=0.9, random_state=42):
     #Read CSV and drop nan values
     df = pd.read_csv(data_path)
     df = df.dropna(subset=['question'])
     df = df.dropna(subset=['id'])
     df = df.reset_index(drop=True)
-    # Split data into train, val, and test 0.8, 0.1, 0.1
-    train_df = df.sample(frac=0.8, random_state=random_state)
-    test_df = df.drop(train_df.index)
-    val_df = test_df.sample(frac=0.5, random_state=random_state)
-    test_df = test_df.drop(val_df.index)
+    # Split data into train, val 0.9, 0.1
+    train_df = df.sample(frac=train_size, random_state=random_state)
+    val_df = df.drop(train_df.index)
     # Reset indexes
     train_df = train_df.reset_index(drop=True)
     val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
     #Get Triplets Datasets
     train_df = get_dataset(df=train_df)
     val_df = get_dataset(df=val_df)
-    test_df = get_dataset(df=test_df)
-    return train_df, val_df, test_df
+    return train_df, val_df
 
 
 
@@ -112,7 +108,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
         wandb_project_name = model_save_name+'-tracking'
 
     print('Loading data...')
-    train_df, val_df, test_df = get_train_eval_test_data(data_path)
+    train_df, val_df = get_train_eval_data(data_path)
     val_single_df = triplets_df_to_single_df(val_df)
     eval_dataset = TripletDataset(val_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len)
 
