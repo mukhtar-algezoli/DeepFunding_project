@@ -63,7 +63,6 @@ def calculate_accuracy_from_embeddings(embeddings, labels):
         predicted_group = unique_groups[distances.argmin()]
         preds.append(predicted_group)
     print(accuracy_score(labels, preds))
-    print(confusion_matrix(labels, preds))
     return accuracy_score(labels, preds)
 
 

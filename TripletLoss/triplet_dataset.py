@@ -139,6 +139,8 @@ def create_triplets(data):
 
 def downsample(data):
     min_len = data.positive_group.value_counts().min()
+    if min_len > 50:
+        min_len = 50
     grouped = data.groupby('positive_group')
     data = pd.concat([group.sample(min_len) for name, group in grouped])
     data = data.reset_index(drop=True)
