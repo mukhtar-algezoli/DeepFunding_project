@@ -1,0 +1,82 @@
+sentence,group,id
+Hello.,welcome message,1
+Peace and blessings be upon you.,welcome message,1
+Good afternoon! I need your help.,welcome message,1
+"Good morning, I have a question.",welcome message,1
+Good evening,welcome message,1
+Good day,welcome message,1
+Hi,welcome message,1
+"Hello, I have a question.",welcome message,1
+The worst customer service you can encounter.,complaint,2
+Your services are awful.,complaint,2
+This is completely unacceptable! Your behavior is disrespectful.,complaint,2
+I'm utterly disappointed with the way you handle complaints.,complaint,2
+I am very disappointed with your services.,complaint,2
+What is your phone number?,Phone number + number not working,3
+The number 6100 is not working.,Phone number + number not working,3
+"My phone has no signal, and I cant make any calls.",Phone number + number not working,3
+"I tried dialing your support number, but it's not working.",Phone number + number not working,3
+"When I call your support number, I get a busy tone.",Phone number + number not working,3
+Where can I find your phone number?,Phone number + number not working,3
+I want to know the currency exchange rates.,Exchange rate,4
+What is the exchange rate of the dollar today?,Exchange rate,4
+How does the recent economic situation affect currency exchange rates?,Exchange rate,4
+Is it a good time to exchange foreign currency right now?,Exchange rate,4
+What is the exchange rate of the dollar today?,Exchange rate,4
+Why is the exchange rate of the dollar so high?,Exchange rate,4
+When is the best time to exchange foreign currency?,Exchange rate,4
+Can I buy dollars from the bank?,Forgin currency exchange,5
+I want to exchange Sudanese currency for dollars.,Forgin currency exchange,5
+"I need to exchange Japanese Yen for British Pounds, can you assist me?",Forgin currency exchange,5
+I have Canadian Dollars and would like to convert them into Euros.,Forgin currency exchange,5
+"I need to exchange Japanese Yen for British Pounds, can you assist me?",Forgin currency exchange,5
+I have Canadian Dollars and would like to convert them into Euros.,Forgin currency exchange,5
+Can I buy dollars from the bank?,Forgin currency exchange,5
+What amount is deposited to open the account?,Account opening,6
+I want to open a new account.,Account opening,6
+"I'm currently abroad, can I open a bank account without visiting a branch?",Account opening,6
+"I reside in another country, can I apply for a bank account remotely?",Account opening,6
+"I am a resident in Saudi Arabia, can I open an account in Riyals?",Account opening from abroad,7
+"I am in Saudi Arabia, how can I open an account with you?",Account opening from abroad,7
+"Im currently abroad, can I open a bank account without visiting a branch?",Account opening from abroad,7
+"I reside in another country, can I apply for a bank account remotely?",Account opening from abroad,7
+"I have a question, if you please.",General question,8
+I have a quick question.,General question,8
+How long does it take to get a response to an email inquiry?,General question,8
+What is the best way to reach your customer support team?,General question,8
+I have a question about my account.,General question,8
+Do you have a branch in Halfa Al Jadida?,Branch location,9
+"I'm asking about your branch in Bahri, have you opened it yet?",Branch location,9
+Can I use online banking services at your branch in the city center?,Branch location,9
+Is the branch in Bahri offering safe deposit box services?,Branch location,9
+I want to know the location of your branch in Riyadh.,Branch location,9
+Can I transfer money from here to Egypt?,Transfer,10
+"I am in Saudi Arabia, how can I send money to Sudan through the bank?",Transfer,10
+I want to transfer funds to my relative's account in France.,Transfer,10
+Are there any fees for international money transfers?,Transfer,10
+How can I transfer money to my family in Egypt?,Transfer,10
+I'm inquiring about investment deposits.,Investment deposit,11
+What are the conditions and profits of investment deposits?,Investment deposit,11
+What are the available investment options for long-term growth?,Investment deposit,11
+I'm interested in low-risk investment opportunities.,Investment deposit,11
+What are the available investment options for long-term growth?,Investment deposit,11
+What are the conditions and profits of investment deposits?,Investment deposit,11
+Im inquiring about investment deposits.,Investment deposit,11
+I want to know more about investment deposits.,Investment deposit,11
+May God bless you in this life and the hereafter.,Thanks,12
+"Thank you, and thank you for your excellent service.",Thanks,12
+We wish you prosperity and success in all your endeavors.,Thanks,12
+"Your team's dedication to customer satisfaction is commendable, thank you!",Thanks,12
+Thank you for your time and effort.,Thanks,12
+Thank you for your help.,Thanks,12
+Thank you for your assistance.,Thanks,12
+Inquiring about bank jobs for computer science graduates.,Job application,13
+Are there any internship opportunities for students?,Job application,13
+Are there any job openings in your finance department?,Job application,13
+I'm a recent graduate looking for entry-level positions.,Job application,13
+I would like to apply for a job at your bank.,Job application,13
+I want to borrow money.,Loan,14
+Can people borrow money from you?,Loan,14
+I need a personal loan to cover unexpected medical expenses.,Loan,14
+What are the eligibility criteria for obtaining a loan?,Loan,14
+What are the conditions for obtaining a loan?,Loan,14
