@@ -10,7 +10,7 @@ import pickle
 import os
 
 class TripletDataset(torch.utils.data.Dataset):
-    def __init__(self, data, tokenizer, device='cpu', batch_size=10, shuffle=True, max_len=200, use_allnli=False, eval_data=False):
+    def __init__(self, data, tokenizer, device='cpu', batch_size=10, shuffle=True, max_len=200):
         '''
         data: pandas dataframe with columns: ['triplet', 'positive_group', 'negative_group']
         tokenizer: tokenizer object from transformers library
@@ -18,18 +18,8 @@ class TripletDataset(torch.utils.data.Dataset):
         batch_size: batch size for the dataloader
         shuffle: shuffle the data before batching
         '''
-        self.using_allnli = use_allnli
-        self.eval_data = eval_data
-        if self.using_allnli:
-            # self.data = get_ALLNLI_dataset()
-            big_allnli = get_ALLNLI_dataset()
-            if self.eval_data:
-                self.data = big_allnli[6000:7000]
-            else:
-                self.data = big_allnli[:5000]
-            
-        else:
-            self.data = data
+    
+        self.data = data
         self.shuffle = shuffle
         self.batch_size = batch_size
         self.device = device
@@ -173,36 +163,3 @@ def remove_duplicates(data):
     data = data.reset_index(drop=True)
     return data
 
-
-
-def get_ALLNLI_dataset():
-    nli_dataset_path = 'dataset/AllNLI.tsv.gz'
-    nli_dataset_pickle_path = 'dataset/AllNLI.pickle'
-    if os.path.exists(nli_dataset_pickle_path):
-        with open(nli_dataset_pickle_path, 'rb') as fIn:
-            train_samples = pickle.load(fIn)
-            return train_samples
-    train_data = {}
-    def add_to_samples(sent1, sent2, label):
-        if sent1 not in train_data:
-            train_data[sent1] = {'contradiction': set(), 'entailment': set(), 'neutral': set()}
-        train_data[sent1][label].add(sent2)
-
-    with gzip.open(nli_dataset_path, 'rt', encoding='utf8') as fIn:
-        reader = csv.DictReader(fIn, delimiter='\t', quoting=csv.QUOTE_NONE)
-        for row in reader:
-            if row['split'] == 'train':
-                sent1 = row['sentence1'].strip()
-                sent2 = row['sentence2'].strip()
-
-                add_to_samples(sent1, sent2, row['label'])
-                add_to_samples(sent2, sent1, row['label'])  #Also add the opposite
-    train_samples = []
-    for sent1, others in train_data.items():
-        if len(others['entailment']) > 0 and len(others['contradiction']) > 0:
-            train_samples.append(InputExample(texts=[sent1, random.choice(list(others['entailment'])), random.choice(list(others['contradiction']))]))
-            train_samples.append(InputExample(texts=[random.choice(list(others['entailment'])), sent1, random.choice(list(others['contradiction']))]))
-
-    with open(nli_dataset_pickle_path, 'wb') as fOut:
-        pickle.dump(train_samples, fOut)
-    return train_samples

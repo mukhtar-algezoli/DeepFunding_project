@@ -57,33 +57,36 @@ def main(args_dict, use_argparse=False):
         'save_model_path': './models/LoRa',
         'model_save_name': None,
         'wandb_project_name': None,
-        'use_allnli': False
     }
     for key in default_args_dict.keys():
         if key not in args_dict.keys():
             args_dict[key] = default_args_dict[key]
-
     #Pretty print args
     print('Arguments:')
     for key in args_dict.keys():
         print(f'{key}: {args_dict[key]}')
-
-
     train(**args_dict)
 
-    
+def get_train_eval_test_data(data_path, random_state=42):
+    data_df = get_dataset(data_path)
+    train_df = data_df.sample(frac=0.8, random_state=random_state)
+    test_df = data_df.drop(train_df.index)
+    val_df = test_df.sample(frac=0.5, random_state=random_state)
+    test_df = test_df.drop(val_df.index)
+    return train_df, val_df, test_df
+
+
+
 
 def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config=None,
           batch_size=16, lr=1e-5, triplet_loss=None, num_epochs=5, max_len=100,
           eval_every=100,save_model_every=1000, shuffle=True, eval_data_path=None,
-          save_model_path='./models/LoRa', model_save_name=None, wandb_project_name=None, use_allnli=False):
+          save_model_path='./models/LoRa', model_save_name=None, wandb_project_name=None):
     
     print('Loading model...')
     model = get_sts_model(model_path, device, peft_config)
     tokenizer = model.tokenizer
     optimizer = torch.optim.AdamW(params=model.parameters(), lr=lr)
-
-
     if not os.path.exists(save_model_path):
         os.makedirs(save_model_path)
     if model_save_name is None:
@@ -95,15 +98,10 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
     if wandb_project_name is None:
         wandb_project_name = model_save_name+'-tracking'
 
-    data_df = get_dataset(data_path)
-    train_df = data_df.sample(frac=0.8, random_state=42)
-    test_df = data_df.drop(train_df.index)
-    val_df = test_df.sample(frac=0.5, random_state=42)
+    print('Loading data...')
+    train_df, val_df, test_df = get_train_eval_test_data(data_path)
     val_single_df = triplets_df_to_single_df(val_df)
-    test_df = test_df.drop(val_df.index)
-    eval_data_df = get_sentence_id_label_df(eval_data_path)
-    sentences = eval_data_df['sentence']
-    labels = eval_data_df['id']
+    eval_dataset = TripletDataset(val_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len)
 
     print('Initializing wandb...')
     wandb.init(project=wandb_project_name)
@@ -139,10 +137,7 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
     steps = 0
     accuracy = 0
     for epoch in epochs_tbar:
-        # train_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
-        # eval_dataset = TripletDataset(data_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli, eval_data=True)
-        train_dataset = TripletDataset(train_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
-        eval_dataset = TripletDataset(val_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len, use_allnli=use_allnli)
+        train_dataset = TripletDataset(train_df, tokenizer=tokenizer, device=device, batch_size=batch_size, shuffle=shuffle, max_len=max_len)
         epoch_steps = 0
         accumelated_loss = 0
         batches_tbar = tqdm(train_dataset, unit='batch')
@@ -159,12 +154,11 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                 accumelated_loss += loss.item()
 
                 batches_tbar.set_description(f'Batch {epoch_steps}/{len(train_dataset)} | Loss: {loss.item():.2f}')
-                batches_tbar.refresh()
-
                 epochs_tbar.set_description(f'Epoch {epoch+1}/{num_epochs} | Average loss: {accumelated_loss/epoch_steps:.2f} | Accuracy: {accuracy:.2f}')
+                batches_tbar.refresh()
                 epochs_tbar.refresh()
-
                 wandb.log({'loss': loss.item()})
+
                 if (steps % eval_every == 0) or (epoch_steps == len(train_dataset)):
                     print('Evaluating model')
                     #Calculate triplet loss on eval dataset
@@ -179,12 +173,9 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                         eval_loss += loss.item()
                         eval_steps += 1
                     eval_loss = eval_loss/eval_steps
-                    wandb.log({'eval_loss': eval_loss})
 
 
-                    #Calculate accuracy on eval dataset
                     embeddings = []
-                    # sentences = eval_dataset
                     sentences = val_single_df['sentence'].tolist()
                     labels = val_single_df['group']
                     for sentence in tqdm(sentences, unit='sentence', desc='Generating embeddings'):
@@ -195,6 +186,8 @@ def train(model_path, data_path='./dataset/data.csv', device='cuda', peft_config
                     average_inner_distance  = all_res['average_inner_distance']
                     average_across_distance =all_res['average_across_distance']
                     accuracy = calculate_accuracy_from_embeddings(embeddings, labels)
+                    
+                    wandb.log({'eval_loss': eval_loss})
                     wandb.log({'average_inner_distance': average_inner_distance})
                     wandb.log({'average_across_distance': average_across_distance})
                     wandb.log({'accuracy': accuracy})
