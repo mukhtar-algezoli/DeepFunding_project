@@ -83,9 +83,9 @@ def get_train_eval_test_data(data_path, random_state=42):
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
     #Get Triplets Datasets
-    train_df = get_dataset(train_df=train_df)
-    val_df = get_dataset(train_df=val_df)
-    test_df = get_dataset(train_df=test_df)
+    train_df = get_dataset(df=train_df)
+    val_df = get_dataset(df=val_df)
+    test_df = get_dataset(df=test_df)
     return train_df, val_df, test_df
 
 
